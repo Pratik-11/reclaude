@@ -9,6 +9,9 @@
   <img alt="Bash" src="https://img.shields.io/badge/written%20in-bash-4EAA25?logo=gnubash&logoColor=white">
   <img alt="Size" src="https://img.shields.io/badge/size-1%20file-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="https://github.com/Pratik-11/reclaude/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Pratik-11/reclaude?style=flat"></a>
+  <a href="https://github.com/Pratik-11/reclaude/issues"><img alt="Issues" src="https://img.shields.io/github/issues/Pratik-11/reclaude"></a>
+  <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen"></a>
 </p>
 
 ---
@@ -96,6 +99,22 @@ rm ~/.local/bin/reclaude ~/.claude/reclaude.tsv
 ```
 
 The test runs against a fake home folder with a fake terminal, so it never touches your real sessions.
+
+## Contributing
+
+Ideas, bug reports and pull requests are welcome.
+
+- 🐛 **Something broke?** [Report a bug](https://github.com/Pratik-11/reclaude/issues/new?template=bug_report.md)
+- 💡 **Have an idea?** [Request a feature](https://github.com/Pratik-11/reclaude/issues/new?template=feature_request.md)
+- 🛠️ **Want to code?** Read [CONTRIBUTING.md](CONTRIBUTING.md) and open a pull request
+
+If reclaude saved your sessions, a ⭐ helps other people find it.
+
+## Contributors
+
+<a href="https://github.com/Pratik-11/reclaude/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Pratik-11/reclaude" alt="Contributors">
+</a>
 
 ## License
 
