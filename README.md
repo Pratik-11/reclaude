@@ -19,10 +19,10 @@ You have five Claude Code sessions open across five projects. Your PC restarts f
 
 ```
 $ reclaude
-opened ronakaman-23-86
-opened restorclaude-55
-opened scrutautomation-f0
-opened twitterautomate-e4
+opened pratikworks-42
+opened pratikdoesnt-13
+opened finally-shipping-it-07
+opened billion-dollar-idea-99
 ```
 
 ## Install
@@ -49,10 +49,10 @@ This puts `reclaude` in `~/.local/bin` and adds a cron job that saves your open 
 
 ```
 $ reclaude list
- 1  ronakaman-23-86          ~/Applications/ronakaman_23
- 2  restorclaude-55          ~/Applications/restorclaude  (running)
- 3  scrutautomation-f0       ~/Applications/scrutAutomation
- 4  twitterautomate-e4       ~/pratiks/twitterautomate
+ 1  pratikworks-42           ~/pratikworks
+ 2  pratikdoesnt-13          ~/pratikdoesnt  (running)
+ 3  finally-shipping-it-07   ~/side-projects/finally-shipping-it
+ 4  billion-dollar-idea-99   ~/side-projects/billion-dollar-idea
 ```
 
 It never opens duplicates. A session that is already running is skipped, and so is one whose folder has been deleted.
