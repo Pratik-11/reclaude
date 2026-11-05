@@ -1,35 +1,36 @@
 # Contributing to reclaude
 
-Thanks for helping out! Bug reports, terminal support, ideas and fixes are all welcome.
+Thanks for taking a look. Bug reports, support for more terminals, feature ideas and fixes are all welcome.
 
-## Found a bug?
+## Reporting a bug
 
-[Open a bug report](https://github.com/Pratik-11/reclaude/issues/new?template=bug_report.md). Include:
+[Open a bug report](https://github.com/Pratik-11/reclaude/issues/new?template=bug_report.md) and include:
 
-- your distro and terminal (`echo $XDG_CURRENT_DESKTOP; ps -o comm= -p $PPID`)
+- your distro and terminal (`echo $XDG_CURRENT_DESKTOP; ps -o comm= -p $PPID` prints both)
 - the output of `reclaude list` and `crontab -l | grep reclaude`
-- what you expected and what happened
+- what you expected to happen and what happened instead
 
-## Want a feature?
+## Suggesting a feature
 
-[Open a feature request](https://github.com/Pratik-11/reclaude/issues/new?template=feature_request.md) and describe the problem you're trying to solve. Small, focused ideas are the easiest to merge.
+[Open a feature request](https://github.com/Pratik-11/reclaude/issues/new?template=feature_request.md). Start with the problem you ran into, not the solution you have in mind. Small ideas are the easiest to get merged.
 
 ## Sending a pull request
 
 1. Fork the repo and create a branch: `git checkout -b my-change`
-2. Make your change in `reclaude`. It's one Bash script, keep it that way.
+2. Make your change in `reclaude`. Please keep it as one script.
 3. Run the checks:
    ```sh
    bash -n reclaude install.sh
    ./test.sh
    ```
-   If you have [ShellCheck](https://www.shellcheck.net/), run `shellcheck reclaude` too.
-4. If you changed behaviour, add a check to `test.sh` and update the README.
-5. Open a pull request explaining what changed and why.
+   If you have [ShellCheck](https://www.shellcheck.net/) installed, run `shellcheck reclaude` as well.
+4. If you changed how something behaves, add a check to `test.sh` and update the README.
+5. Open the pull request and say what you changed and why.
 
 ## Ground rules
 
-- **Stay small.** reclaude is one script with `jq` as its only extra dependency. New dependencies need a very good reason.
-- **Don't touch real sessions in tests.** `test.sh` runs in a fake home folder. Keep it that way.
-- **Adding a terminal?** Add it to `pick_term` and, if it needs different arguments, to the `case` in `open_one`. Then list it in the README.
-- Be kind. Everyone here is doing this for free.
+reclaude is one Bash script, and `jq` is its only extra dependency. A new dependency needs a strong reason.
+
+`test.sh` runs in a fake home folder so it can never touch anyone's real sessions. New tests should do the same.
+
+To add a terminal, add it to `pick_term`. If it takes different arguments from the usual `-e`, add a case for it in `open_one` too. Then add it to the list in the README.
