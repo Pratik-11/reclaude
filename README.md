@@ -1,7 +1,7 @@
 <h1 align="center">reclaude</h1>
 
 <p align="center">
-  <b>Reboot your PC. Get every Claude Code session back with one command.</b>
+  <b>Crashed? Battery died? Shut down by accident?<br>All your Claude sessions are now one command away.</b>
 </p>
 
 <p align="center">
