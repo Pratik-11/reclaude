@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# reclaude — reopen your Claude Code sessions after a reboot.
+#   reclaude              reopen every saved session
+#   reclaude 1 3          reopen only sessions 1 and 3 (numbers from `list`)
+#   reclaude --tmux       reopen inside one tmux session (any terminal, SSH too)
+#   reclaude list         show saved sessions
+#   reclaude save         snapshot running sessions (cron runs this every minute)
+#   reclaude clear        forget the saved list
+#   reclaude autostart on|off   reopen automatically at login
+set -euo pipefail
+SNAP="$HOME/.claude/reclaude.tsv"
+SELF=$(readlink -f "$0")
+AUTOSTART="$HOME/.config/autostart/reclaude.desktop"
+
+# running interactive sessions: cwd<TAB>id<TAB>name
+live() {
+  for f in "$HOME"/.claude/sessions/*.json; do
+    [[ -e "$f" ]] || continue
+    kill -0 "$(basename "$f" .json)" 2>/dev/null || continue   # file left by a dead process
+    jq -r 'select(.kind=="interactive" and .sessionId) | [.cwd, .sessionId, (.name // "")] | @tsv' "$f" 2>/dev/null || true
+  done
+}
+
+# $TERMINAL, else the terminal we're running in, else the first one installed
+pick_term() {
+  if   [[ -n "${TERMINAL:-}" ]];              then echo "$TERMINAL"
+  elif [[ -n "${KITTY_WINDOW_ID:-}" ]];       then echo kitty
+  elif [[ -n "${WEZTERM_PANE:-}" ]];          then echo wezterm
+  elif [[ -n "${KONSOLE_VERSION:-}" ]];       then echo konsole
+  elif [[ -n "${ALACRITTY_WINDOW_ID:-}" ]];   then echo alacritty
+  elif [[ "${TERM_PROGRAM:-}" == ghostty ]];  then echo ghostty
+  elif [[ -n "${GNOME_TERMINAL_SCREEN:-}" ]]; then echo gnome-terminal
+  else
+    for t in gnome-terminal konsole kitty wezterm ghostty xfce4-terminal tilix terminator alacritty foot x-terminal-emulator xterm; do
+      command -v "$t" >/dev/null && { echo "$t"; return; }
+    done
+  fi
+}
+
+open_one() {
+  local run=("$SELF" _run "$1" "$2")
+  case "$(basename "$TERM_BIN")" in
+    gnome-terminal)    "$TERM_BIN" --tab -- "${run[@]}" ;;
+    konsole)           "$TERM_BIN" --new-tab -e "${run[@]}" & ;;
+    kitty)             { "$TERM_BIN" @ launch --type=tab "${run[@]}" >/dev/null 2>&1 || "$TERM_BIN" "${run[@]}"; } & ;;
+    wezterm)           { "$TERM_BIN" cli spawn -- "${run[@]}" >/dev/null 2>&1 || "$TERM_BIN" start -- "${run[@]}"; } & ;;
+    xfce4-terminal)    "$TERM_BIN" --tab -x "${run[@]}" & ;;
+    foot)              "$TERM_BIN" "${run[@]}" & ;;
+    tilix|terminator)  "$TERM_BIN" -e "$(printf '%q ' "${run[@]}")" & ;;   # these take one string
+    *)                 "$TERM_BIN" -e "${run[@]}" & ;;                      # alacritty, ghostty, xterm, most others
+  esac
+}
+
+case "${1:-}" in
+  _run)  # what each new tab runs. Find `claude` via the user's own shell config, since autostart PATH can lack it
+    claude=$(command -v claude || "${SHELL:-bash}" -ic 'command -v claude' 2>/dev/null | tail -1)
+    cd "$2" && "${claude:-claude}" --resume "$3"
+    exec "${SHELL:-bash}" ;;
+  save)
+    tmp=$(mktemp); live > "$tmp"
+    # ponytail: empty snapshot never overwrites (boot, shutdown), so closing every session keeps the old list; `clear` forgets it
+    if [[ -s "$tmp" ]]; then mv "$tmp" "$SNAP"; else rm -f "$tmp"; fi
+    exit ;;
+  list)
+    [[ -s "$SNAP" ]] || { echo "nothing saved yet"; exit; }
+    running=$(live | cut -f2)
+    n=0; while IFS=$'\t' read -r cwd id name; do
+      n=$((n+1)); mark=""; grep -qx "$id" <<<"$running" && mark="  (running)"
+      printf '%2d  %-24s %s%s\n' "$n" "${name:-${id:0:8}}" "${cwd/#$HOME/\~}" "$mark"
+    done < "$SNAP"
+    exit ;;
+  clear) rm -f "$SNAP"; echo "cleared"; exit ;;
+  autostart)
+    case "${2:-}" in
+      on)  mkdir -p "$(dirname "$AUTOSTART")"
+           printf '[Desktop Entry]\nType=Application\nName=reclaude\nExec=sh -c "sleep 5; %s"\n' "$SELF" > "$AUTOSTART"
+           echo "sessions will reopen at login" ;;
+      off) rm -f "$AUTOSTART"; echo "autostart off" ;;
+      *)   echo "usage: reclaude autostart on|off"; exit 1 ;;
+    esac
+    exit ;;
+  -h|--help) sed -n '2,9p' "$SELF" | cut -c3-; exit ;;
+esac
+
+TMUX_MODE=0; PICK=()
+for a in "$@"; do
+  case "$a" in
+    --tmux) TMUX_MODE=1 ;;
+    ''|*[!0-9]*) echo "unknown argument: $a (try --help)"; exit 1 ;;
+    *) PICK+=("$a") ;;
+  esac
+done
+
+[[ -s "$SNAP" ]] || { echo "nothing saved yet"; exit 1; }
+TERM_BIN=""
+if (( ! TMUX_MODE )) && [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then TERM_BIN=$(pick_term); fi
+[[ -n "$TERM_BIN" ]] || TMUX_MODE=1   # no desktop (SSH, console) or no terminal found
+if (( TMUX_MODE )) && ! command -v tmux >/dev/null; then echo "no terminal found and tmux not installed"; exit 1; fi
+
+running=$(live | cut -f2)
+n=0; opened=0
+while IFS=$'\t' read -r cwd id name; do
+  n=$((n+1))
+  if (( ${#PICK[@]} )) && [[ " ${PICK[*]} " != *" $n "* ]]; then continue; fi
+  if grep -qx "$id" <<<"$running"; then echo "skip ${name:-$id}: already running"; continue; fi
+  if [[ ! -d "$cwd" ]]; then echo "skip ${name:-$id}: $cwd no longer exists"; continue; fi
+  if (( TMUX_MODE )); then
+    cmd=$(printf '%q ' "$SELF" _run "$cwd" "$id")
+    if tmux has-session -t reclaude 2>/dev/null; then tmux new-window -t reclaude -n "${name:-claude}" "$cmd"
+    else tmux new-session -d -s reclaude -n "${name:-claude}" "$cmd"; fi
+  else
+    open_one "$cwd" "$id"
+  fi
+  echo "opened ${name:-$id}"; opened=$((opened+1))
+done < "$SNAP"
+
+if (( TMUX_MODE && opened )); then
+  if [[ -n "${TMUX:-}" ]]; then tmux switch-client -t reclaude; else exec tmux attach -t reclaude; fi
+fi
